@@ -18,25 +18,38 @@ DEFAULT_TEMPS = [0.874, 0.765, 0.594, 0.439, 0.366, 0.124]
 DEFAULT_HUMIDS = [0.941, 0.778, 0.507, 0.236, 0.073, 0.014, 0.002]
 
 
-class _Tee(io.TextIOBase):
-    def __init__(self, *streams):
-        self._streams = streams
+class _LogStream(io.TextIOBase):
+    """
+    Redirect stdout writes to the GUI to avoid locking up the main thread.
+    """
+
+    encoding = "utf-8"
+    errors = "replace"
+
+    def __init__(self, log: LogFn):
+        super().__init__()
+        self._log = log
+        self._buf = ""
+
+    def writable(self) -> bool:
+        return True
 
     def write(self, s: str) -> int:
-        for stream in self._streams:
-            stream.write(s)
-            try:
-                stream.flush()
-            except Exception:
-                pass
+        if not s:
+            return 0
+        self._buf += s
+        while "\n" in self._buf:
+            line, self._buf = self._buf.split("\n", 1)
+            line = line.rstrip("\r")
+            if line:
+                self._log(line)
         return len(s)
 
     def flush(self) -> None:
-        for stream in self._streams:
-            try:
-                stream.flush()
-            except Exception:
-                pass
+        leftover = self._buf.rstrip("\r\n")
+        self._buf = ""
+        if leftover:
+            self._log(leftover)
 
 
 def _emit(msg: str, log: LogFn | None) -> None:
@@ -69,9 +82,8 @@ def generate_world_files(cfg: PlanetConfig, work_dir: Path, *, log: LogFn | None
         log,
     )
 
-    buf = io.StringIO()
-    tee = _Tee(sys.stdout, buf) if log else sys.stdout
-    with contextlib.redirect_stdout(tee):
+    out_stream: io.TextIOBase = _LogStream(log) if log else sys.stdout  # type: ignore[assignment]
+    with contextlib.redirect_stdout(out_stream):
         world = generate_world(
             cfg.name,
             cfg.width,
@@ -107,12 +119,8 @@ def generate_world_files(cfg: PlanetConfig, work_dir: Path, *, log: LogFn | None
         )
         if cfg.grayscaleHeightmap:
             generate_grayscale_heightmap(world, f"{work_dir.as_posix()}/{cfg.name}_grayscale.png")
-
-    if log:
-        text = buf.getvalue().strip()
-        if text:
-            for line in text.splitlines():
-                log(line)
+    if isinstance(out_stream, _LogStream):
+        out_stream.flush()
 
     world_path = work_dir / f"{cfg.name}.world"
     if not world_path.is_file():

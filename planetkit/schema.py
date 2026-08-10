@@ -531,21 +531,90 @@ class PlanetConfig:
         return cfg
 
     def validate(self) -> None:
+        field_names = {f.name for f in fields(self)}
         for meta in FIELD_META:
-            if meta.key not in {f.name for f in fields(self)}:
+            if meta.key not in field_names:
                 continue
             value = getattr(self, meta.key)
+            label = meta.label
             if meta.kind == "choice" and meta.choices and value not in meta.choices:
-                raise ValueError(f"{meta.key} must be one of {meta.choices}, got {value!r}")
-            if meta.min_value is not None and isinstance(value, (int, float)) and value < meta.min_value:
-                raise ValueError(f"{meta.key} below minimum {meta.min_value}")
-            if meta.max_value is not None and isinstance(value, (int, float)) and value > meta.max_value:
-                raise ValueError(f"{meta.key} above maximum {meta.max_value}")
-        if not self.name.strip():
-            raise ValueError("name must not be empty")
-        if self.width != self.height:
-            # Allowed but discouraged; keep as warning-only at call site
-            pass
+                choices = ", ".join(meta.choices)
+                raise ValueError(f"{label} must be one of: {choices} (got {value!r})")
+            if meta.kind == "int" and not isinstance(value, bool) and isinstance(value, float) and not float(value).is_integer():
+                raise ValueError(f"{label} must be a whole number (got {value})")
+            if meta.kind in ("int", "float") and not isinstance(value, bool):
+                if not isinstance(value, (int, float)):
+                    raise ValueError(f"{label} must be a number (got {value!r})")
+                if meta.min_value is not None and value < meta.min_value:
+                    raise ValueError(f"{label} below minimum value of {meta.min_value}")
+                if meta.max_value is not None and value > meta.max_value:
+                    raise ValueError(f"{label} above maximum value of {meta.max_value}")
+            if meta.kind == "str" and meta.key == "name":
+                text = str(value).strip()
+                if not text:
+                    raise ValueError("World name must not be empty")
+                bad = [c for c in text if not (c.isalnum() or c in ("-", "_"))]
+                if bad:
+                    raise ValueError(
+                        "World name may only use letters, numbers, hyphens, and underscores "
+                        f"(remove {''.join(sorted(set(bad)))!r})"
+                    )
+        if not str(self.name).strip():
+            raise ValueError("World name must not be empty")
+        if float(self.tempMinC) >= float(self.tempMaxC):
+            raise ValueError(
+                f"Runtime temp min °C ({self.tempMinC}) must be less than "
+                f"Runtime temp max °C ({self.tempMaxC})"
+            )
+        # Guard against pathological map sizes even if metadata is bypassed.
+        for dim_name, dim in (("Width (cells)", self.width), ("Height (cells)", self.height)):
+            if not isinstance(dim, int) or isinstance(dim, bool):
+                raise ValueError(f"{dim_name} must be a whole number")
+            if dim < 256:
+                raise ValueError(f"{dim_name} below minimum value of 256")
+            if dim > 4096:
+                raise ValueError(f"{dim_name} above maximum value of 4096")
+
+
+def parse_field_value(meta: FieldMeta, raw: Any) -> Any:
+    """Coerce a UI/CLI raw value using field metadata; raise ValueError with label."""
+    label = meta.label
+    if meta.kind == "bool":
+        if isinstance(raw, bool):
+            return raw
+        text = str(raw).strip().lower()
+        if text in ("1", "true", "yes", "on"):
+            return True
+        if text in ("0", "false", "no", "off"):
+            return False
+        raise ValueError(f"{label} must be true or false (got {raw!r})")
+    if meta.kind == "int":
+        text = str(raw).strip()
+        if text == "":
+            raise ValueError(f"{label} is required")
+        try:
+            # Accept "3.0" but reject "3.2"
+            as_float = float(text)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{label} must be a whole number (got {raw!r})") from exc
+        if not as_float.is_integer():
+            raise ValueError(f"{label} must be a whole number (got {raw!r})")
+        return int(as_float)
+    if meta.kind == "float":
+        text = str(raw).strip()
+        if text == "":
+            raise ValueError(f"{label} is required")
+        try:
+            return float(text)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{label} must be a number (got {raw!r})") from exc
+    if meta.kind == "choice":
+        text = str(raw).strip()
+        if meta.choices and text not in meta.choices:
+            choices = ", ".join(meta.choices)
+            raise ValueError(f"{label} must be one of: {choices} (got {raw!r})")
+        return text
+    return str(raw).strip() if raw is not None else ""
 
 
 def default_config() -> PlanetConfig:

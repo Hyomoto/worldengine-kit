@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import queue
 import random
+import subprocess
+import sys
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -19,6 +23,7 @@ from planetkit.schema import (
     default_config,
     list_presets,
     load_config,
+    parse_field_value,
     save_config,
 )
 
@@ -32,6 +37,7 @@ class PlanetKitApp(tk.Tk):
         self.vars: dict[str, tk.Variable] = {}
         self._busy = False
         self._env_ok = True
+        self._ui_q: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._help = tk.StringVar(value="Select a control to see what it changes.")
 
         try:
@@ -43,6 +49,7 @@ class PlanetKitApp(tk.Tk):
         self._build()
         self._load_cfg_into_vars(self.cfg)
         self._apply_doctor()
+        self.after(100, self._poll_ui_queue)
 
     def _build(self) -> None:
         outer = ttk.Frame(self, padding=8)
@@ -322,17 +329,10 @@ class PlanetKitApp(tk.Tk):
             if meta is None:
                 data[key] = raw
                 continue
-            if meta.kind == "bool":
-                data[key] = bool(raw)
-            elif meta.kind == "int":
-                data[key] = int(raw)
-            elif meta.kind == "float":
-                data[key] = float(raw)
-            else:
-                data[key] = str(raw)
+            data[key] = parse_field_value(meta, raw)
         # Prefer explicit width/height vars (easy size combobox writes both)
-        data["width"] = int(self.vars["width"].get())
-        data["height"] = int(self.vars["height"].get())
+        data["width"] = parse_field_value(META_BY_KEY["width"], self.vars["width"].get())
+        data["height"] = parse_field_value(META_BY_KEY["height"], self.vars["height"].get())
         data["outputDir"] = "output"
         return PlanetConfig.from_dict(data)
 
@@ -359,9 +359,7 @@ class PlanetKitApp(tk.Tk):
             cfg = self._cfg_from_vars()
             path = resolve_output_dir(cfg)
             path.mkdir(parents=True, exist_ok=True)
-            import os
-
-            os.startfile(path)  # type: ignore[attr-defined]
+            _open_path(path)
         except Exception as exc:
             messagebox.showerror("Output", str(exc))
 
@@ -372,6 +370,20 @@ class PlanetKitApp(tk.Tk):
         self.clipboard_clear()
         self.clipboard_append(str(self._last_zip))
         self.status.set("Zip path copied")
+
+    def _poll_ui_queue(self) -> None:
+        """Drain worker messages on the Tk main thread."""
+        try:
+            while True:
+                kind, payload = self._ui_q.get_nowait()
+                if kind == "log":
+                    self._append_log(str(payload))
+                elif kind == "done":
+                    result, error = payload
+                    self._on_generate_done(result, error)
+        except queue.Empty:
+            pass
+        self.after(100, self._poll_ui_queue)
 
     def _on_generate(self) -> None:
         if self._busy:
@@ -396,10 +408,10 @@ class PlanetKitApp(tk.Tk):
 
         def worker() -> None:
             try:
-                result = run_pipeline(cfg, log=lambda m: self.after(0, self._append_log, m))
-                self.after(0, self._on_generate_done, result, None)
+                result = run_pipeline(cfg, log=lambda m: self._ui_q.put(("log", m)))
+                self._ui_q.put(("done", (result, None)))
             except Exception as exc:
-                self.after(0, self._on_generate_done, None, exc)
+                self._ui_q.put(("done", (None, exc)))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -438,6 +450,17 @@ class PlanetKitApp(tk.Tk):
             photo = ImageTk.PhotoImage(img)
             self._preview_images.append(photo)
             lbl.configure(image=photo, text="")
+
+
+def _open_path(path: Path) -> None:
+    """Open a folder/file with the platform file manager."""
+    target = str(path)
+    if sys.platform == "win32":
+        os.startfile(target)  # type: ignore[attr-defined]
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", target], start_new_session=True)
+    else:
+        subprocess.Popen(["xdg-open", target], start_new_session=True)
 
 
 def run_gui(config_path: Path | None = None) -> None:
