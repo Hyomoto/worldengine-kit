@@ -1,0 +1,50 @@
+[
+  {
+    "op": "add",
+    "path": "/variants/-",
+    "file": "game:worldgen/landforms.json",
+    "side": "Server",
+    "value": {
+      "code": "we-shallows",
+      "comment": "WorldEngine nearshore/sound basin",
+      "hexcolor": "#4EC3C7",
+      "weight": 0.01,
+      "terrainOctaves": [0, 0, 0, 0, 1, 0, 0.2, 0, 0.02],
+      "terrainOctaveThresholds": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "terrainYKeyPositions": [0.410, 0.425, 0.438, 0.452],
+      "terrainYKeyThresholds": [1.000, 0.720, 0.400, 0.000]
+    }
+  },
+  {
+    "op": "add",
+    "path": "/variants/-",
+    "file": "game:worldgen/landforms.json",
+    "side": "Server",
+    "value": {
+      "code": "we-shelf",
+      "comment": "WorldEngine mid continental shelf",
+      "hexcolor": "#2A8FB0",
+      "weight": 0.01,
+      "terrainOctaves": [0, 0, 0, 0, 1, 0, 0.2, 0, 0.02],
+      "terrainOctaveThresholds": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "terrainYKeyPositions": [0.410, 0.428, 0.445, 0.475],
+      "terrainYKeyThresholds": [1.000, 0.720, 0.420, 0.000]
+    }
+  },
+  {
+    "op": "add",
+    "path": "/variants/-",
+    "file": "game:worldgen/landforms.json",
+    "side": "Server",
+    "value": {
+      "code": "we-deepwet",
+      "comment": "WorldEngine deep wet floor; flatter/lower than vanilla veryflat for open ocean with high oceanicity",
+      "hexcolor": "#0B3A5A",
+      "weight": 0.01,
+      "terrainOctaves": [0, 0, 0, 0.1, 0.2, 0, 0.5, 0.01, 0.01],
+      "terrainOctaveThresholds": [0, 0, 0, 0, 0, 0, 0.35, 0, 0],
+      "terrainYKeyPositions": [0.000, 0.380, 0.410, 0.430],
+      "terrainYKeyThresholds": [1.000, 1.000, 0.450, 0.000]
+    }
+  }
+]

@@ -1,0 +1,17 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+output/
+dist/
+build/
+release/
+*.spec.bak
+planet.json
+planet.json.bak
+.DS_Store
+Thumbs.db

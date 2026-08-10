@@ -1,0 +1,14 @@
+{
+  "type": "code",
+  "modid": "worldengine",
+  "name": "WorldEngine Planet",
+  "authors": [
+    "Hyomoto"
+  ],
+  "description": "Drive Vintage Story ClimateMap, OceanMap, LandformMap, and BeachMap from a WorldEngine .vsplanet atlas",
+  "version": "0.2.1",
+  "dependencies": {
+    "game": "1.22.3"
+  },
+  "side": "Server"
+}

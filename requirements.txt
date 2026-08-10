@@ -1,0 +1,7 @@
+# Kit runtime (WorldEngine deps installed from vendor/worldengine via setup.bat)
+numpy>=1.26.0
+protobuf>=6.33.1
+Pillow>=10.0.0
+PyPlatec==1.4.3
+pypng>=0.20220715.0
+noise==1.2.2

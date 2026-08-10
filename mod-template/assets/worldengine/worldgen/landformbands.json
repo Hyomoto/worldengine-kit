@@ -1,0 +1,196 @@
+{
+  "bands": [
+    {
+      "min": 0.00,
+      "max": 0.10,
+      "choices": [
+        { "code": "veryflat", "weight": 18 },
+        { "code": "superflatrarebumps", "weight": 12 },
+        { "code": "veryflatmanybumps", "weight": 2 },
+        { "code": "flatmanybumps", "weight": 2 }
+      ]
+    },
+    {
+      "min": 0.10,
+      "max": 0.22,
+      "choices": [
+        { "code": "elevatedveryflat", "weight": 12 },
+        { "code": "realisticflatlands", "weight": 6 },
+        { "code": "needledflatlands", "weight": 3 },
+        { "code": "roughflatlands", "weight": 1 },
+        { "code": "above sealevel flat grasslands", "weight": 5, "precipMin": 0.25, "precipMax": 0.75, "tempMin": 0.25, "tempMax": 0.75 }
+      ]
+    },
+    {
+      "min": 0.22,
+      "max": 0.38,
+      "choices": [
+        { "code": "realisticflatlands", "weight": 5 },
+        { "code": "flathillvalley", "weight": 12 },
+        { "code": "lowrollinghills", "weight": 14 },
+        { "code": "crbumplands", "weight": 5 },
+        { "code": "elevatedveryflat", "weight": 3 }
+      ]
+    },
+    {
+      "min": 0.38,
+      "max": 0.54,
+      "choices": [
+        { "code": "lowrollinghills", "weight": 12 },
+        { "code": "rollinghills", "weight": 10 },
+        { "code": "supersmoothills", "weight": 6 },
+        { "code": "flathillvalley", "weight": 6 },
+        { "code": "crbumplands", "weight": 4 },
+        { "code": "hillplateu", "weight": 2 },
+        { "code": "cliffy rolling hills", "weight": 0.35, "cliffMin": 0.55 },
+        { "code": "roughlabyrinth", "weight": 2 },
+        { "code": "roundclifflandshilly", "weight": 1, "cliffMin": 0.60 }
+      ]
+    },
+    {
+      "min": 0.54,
+      "max": 0.68,
+      "choices": [
+        { "code": "rollinghills", "weight": 10 },
+        { "code": "supersmoothills", "weight": 7 },
+        { "code": "hillplateu", "weight": 5 },
+        { "code": "crbumplands", "weight": 3 },
+        { "code": "shallowmillionstepmountains", "weight": 3 },
+        { "code": "flathillvalley", "weight": 3 },
+        { "code": "roundclifflandshilly", "weight": 0.75, "cliffMin": 0.60 }
+      ]
+    },
+    {
+      "min": 0.68,
+      "max": 0.80,
+      "choices": [
+        { "code": "shallowmillionstepmountains", "weight": 6 },
+        { "code": "realisticmountains-ledged", "weight": 4 },
+        { "code": "Realistic mountains", "weight": 2 },
+        { "code": "hillplateu", "weight": 3 },
+        { "code": "rollinghills", "weight": 3 },
+        { "code": "realisticmountains-quintupleledged", "weight": 1 },
+        { "code": "cold mountain range", "weight": 2, "tempMax": 0.28 }
+      ]
+    },
+    {
+      "min": 0.80,
+      "max": 0.90,
+      "choices": [
+        { "code": "realisticmountains-ledged", "weight": 4 },
+        { "code": "mediummillionstepmountains", "weight": 3 },
+        { "code": "tallmillionstepmountains", "weight": 2 },
+        { "code": "shallowmillionstepmountains", "weight": 2 },
+        { "code": "step mountains", "weight": 1 },
+        { "code": "hillplateu", "weight": 3 },
+        { "code": "elevatedveryflat", "weight": 1.5 },
+        { "code": "cold mountain range", "weight": 3, "tempMax": 0.28 }
+      ]
+    },
+    {
+      "min": 0.90,
+      "max": 1.00,
+      "choices": [
+        { "code": "tallmillionstepmountains", "weight": 3 },
+        { "code": "mediummillionstepmountains", "weight": 2 },
+        { "code": "humongous mountain, cavernless", "weight": 1 },
+        { "code": "hillplateu", "weight": 2 },
+        { "code": "elevatedveryflat", "weight": 1 },
+        { "code": "cold mountain range", "weight": 4, "tempMax": 0.28 }
+      ]
+    }
+  ],
+  "wetBands": [
+    {
+      "min": 0.00,
+      "max": 0.45,
+      "choices": [
+        { "code": "we-shallows", "weight": 1 }
+      ]
+    },
+    {
+      "min": 0.45,
+      "max": 0.75,
+      "choices": [
+        { "code": "we-shelf", "weight": 1 }
+      ]
+    },
+    {
+      "min": 0.75,
+      "max": 1.00,
+      "choices": [
+        { "code": "we-deepwet", "weight": 5 },
+        { "code": "deep water step mountains", "weight": 0.35 }
+      ]
+    }
+  ],
+  "coastalBands": [
+    {
+      "min": 0.00,
+      "max": 0.18,
+      "choices": [
+        { "code": "veryflat", "weight": 20 },
+        { "code": "elevatedveryflat", "weight": 14 },
+        { "code": "superflatrarebumps", "weight": 6 },
+        { "code": "above sealevel flat grasslands", "weight": 4, "precipMin": 0.20, "precipMax": 0.80, "tempMin": 0.20, "tempMax": 0.80 },
+        { "code": "flatmanybumps", "weight": 2 }
+      ]
+    }
+  ],
+  "lakeBands": [
+    {
+      "min": 0.50,
+      "max": 1.00,
+      "choices": [
+        { "code": "largelake", "weight": 1 }
+      ]
+    }
+  ],
+  "glacierBands": [
+    {
+      "min": 0.35,
+      "max": 1.00,
+      "choices": [
+        { "code": "cold glaciers", "weight": 1, "tempMax": 0.30 }
+      ]
+    }
+  ],
+  "islandBands": [
+    {
+      "min": 0.70,
+      "max": 1.00,
+      "choices": [
+        { "code": "smallshallowislands", "weight": 10, "hMax": 0.22, "distOceanMax": 0.55 },
+        { "code": "islandchess", "weight": 2, "hMax": 0.28, "distOceanMax": 0.45 },
+        { "code": "shallowislands", "weight": 6, "hMax": 0.28 },
+        { "code": "smallcliffislands", "weight": 1.5, "hMax": 0.30, "cliffMin": 0.60 },
+        { "code": "cliffislands", "weight": 1, "hMax": 0.40, "cliffMin": 0.55 }
+      ]
+    },
+    {
+      "min": 0.45,
+      "max": 0.70,
+      "choices": [
+        { "code": "shallowislands", "weight": 14, "hMax": 0.30 },
+        { "code": "largeislands", "weight": 12, "hMax": 0.40 },
+        { "code": "hillsflatsandislands", "weight": 5, "hMin": 0.12, "hMax": 0.50, "distOceanMax": 0.40, "enclosureMin": 0.35, "enclosureMax": 0.85 },
+        { "code": "cliffislands", "weight": 1.5, "hMax": 0.42, "cliffMin": 0.55 },
+        { "code": "smallcliffislands", "weight": 1.5, "hMax": 0.32, "cliffMin": 0.60 }
+      ]
+    }
+  ],
+  "marshBands": [
+    {
+      "min": 0.55,
+      "max": 1.00,
+      "choices": [
+        { "code": "flatmarsh", "weight": 18, "hMax": 0.14, "precipMin": 0.45 },
+        { "code": "marsh", "weight": 14, "hMax": 0.22, "precipMin": 0.40 },
+        { "code": "bumpy marsh", "weight": 4, "hMax": 0.24, "precipMin": 0.35 },
+        { "code": "deathmarsh", "weight": 2, "hMax": 0.18, "precipMin": 0.50, "tempMax": 0.35 },
+        { "code": "sparsecliffyswamplands", "weight": 3, "hMax": 0.25, "precipMin": 0.35, "cliffMin": 0.50, "cliffMax": 0.75 },
+        { "code": "densecliffyswamplands", "weight": 2, "hMax": 0.25, "precipMin": 0.35, "cliffMin": 0.70 }
+      ]
+    }
+  ]
+}
