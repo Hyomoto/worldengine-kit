@@ -22,5 +22,9 @@
   "landformHeightMidPower": 1.55,
   "climatePlanetWeight": 0.6,
   "climateNoiseScaleBlocks": 512,
-  "climateNoiseAmplitude": 0.35
+  "climateNoiseAmplitude": 0.35,
+  "elevPlanetWeight": 0.75,
+  "elevNoiseScaleBlocks": 2048,
+  "elevNoiseAmplitude": 0.25,
+  "elevNoiseCoastWidth": 0.35
 }
