@@ -53,6 +53,8 @@ def generate_world(
     world_format="protobuf",
     gamma_curve=1.25,
     curve_offset=0.2,
+    distance_to_sun=1.0,
+    axial_tilt=0.0,
     fade_borders=True,
     verbose=True,
     black_and_white=False,
@@ -74,6 +76,8 @@ def generate_world(
     shelf_blur_steps=3,
     peak_mix=0.55,
     peak_slope=12.0,
+    temp_min_c=None,
+    temp_max_c=None,
 ):
     w = world_gen(
         world_name,
@@ -87,6 +91,8 @@ def generate_world(
         step,
         gamma_curve=gamma_curve,
         curve_offset=curve_offset,
+        distance_to_sun=distance_to_sun,
+        axial_tilt=axial_tilt,
         fade_borders=fade_borders,
         verbose=verbose,
         folding_ratio=folding_ratio,
@@ -135,7 +141,13 @@ def generate_world(
         draw_precipitation_on_file(w, filename, black_and_white)
         print(f"* precipitation image generated in '{filename}'")
         filename = f"{output_dir}/{world_name}_temperature.png"
-        draw_temperature_levels_on_file(w, filename, black_and_white)
+        draw_temperature_levels_on_file(
+            w,
+            filename,
+            black_and_white,
+            temp_min_c=temp_min_c,
+            temp_max_c=temp_max_c,
+        )
         print(f"* temperature image generated in '{filename}'")
 
     if step.include_biome:

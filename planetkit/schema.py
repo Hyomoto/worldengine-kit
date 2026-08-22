@@ -48,8 +48,8 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="World name",
         group="easy",
         default="example",
-        effect="Sets output file names (.world, previews, .vsplanet, mod zip).",
-        in_game="Only affects asset naming inside the mod zip.",
+        effect="Names output files and folders for this planet.",
+        in_game="Does not change gameplay; only file and folder names.",
         up="Use a short lowercase id without spaces.",
         down="—",
         kind="str",
@@ -60,9 +60,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Seed",
         group="easy",
         default=69,
-        effect="Initializes all procedural noise and plate layout.",
-        in_game="Same seed + same settings → same planet. Change seed for a new layout.",
-        up="Different continents and climates.",
+        effect="Controls the random layout of continents and climate.",
+        in_game="Same seed and settings always produce the same planet.",
+        up="A new seed gives a different world layout.",
         down="—",
         kind="int",
         min_value=0,
@@ -74,10 +74,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Width (cells)",
         group="easy",
         default=2048,
-        effect="Horizontal resolution of the planet grid. Larger maps take much longer.",
-        in_game="With Fit scale, the whole planet stretches over the VS map. More cells = finer coasts before stretch.",
-        up="More detail, slower generation, larger .vsplanet.",
-        down="Faster; coasts look coarser when stretched to a large world.",
+        effect="Horizontal resolution of the planet grid. Larger maps take longer to generate.",
+        in_game="With Fit scale, the planet stretches across the Vintage Story map; more cells mean finer coasts.",
+        up="More detail, slower generation, larger planet file.",
+        down="Faster generation; coasts look coarser when stretched.",
         kind="int",
         min_value=256,
         max_value=4096,
@@ -90,9 +90,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         group="easy",
         default=2048,
         effect="Vertical resolution of the planet grid.",
-        in_game="Same as width for Fit mode; prefer square maps unless you know you want stretch.",
-        up="More detail / slower.",
-        down="Faster / coarser.",
+        in_game="Match width for a square map unless you want a stretched rectangle.",
+        up="More detail; slower generation.",
+        down="Faster; coarser detail.",
         kind="int",
         min_value=256,
         max_value=4096,
@@ -104,35 +104,98 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Style preset",
         group="easy",
         default="balanced",
-        effect="Loads a named bundle of generation knobs (plates, shelf, peaks, etc.).",
-        in_game="Quick starting point; you can still tweak advanced fields afterward.",
-        up="Pick the outcome you want, then fine-tune.",
+        effect="Applies a starting set of generation settings (plates, coasts, peaks, and so on).",
+        in_game="A quick starting point; you can still change Advanced settings afterward.",
+        up="Choose the style you want, then fine-tune.",
         down="—",
         kind="choice",
         choices=("balanced", "continental", "archipelago"),
         easy=True,
     ),
     FieldMeta(
-        key="normalizeTemperature",
-        label="Normalize temperature",
+        key="distanceToSun",
+        label="Distance to sun",
         group="easy",
-        default=True,
-        effect="At pack time, stretches land temperature onto [0,1] from that planet's land min–max.",
-        in_game="ON (default): VS sees the full −20…40 °C spectrum so all biomes can appear. OFF: a cold WE orbit stays cold.",
-        up="Full biome spectrum from whatever WE produced.",
-        down="Preserve absolute WE cold/hot bias (intentionally harsh climates).",
-        kind="bool",
+        default=1.0,
+        effect="Overall heat bias of the planet (1.0 ≈ Earth). With Climate extremes, sets where the °C window sits.",
+        in_game="Closer shifts climates hotter; farther shifts them colder. Extremes still controls how wide that band is.",
+        up="Farther from the sun; colder band (narrow extremes stay cold).",
+        down="Closer to the sun; hotter band (narrow extremes stay hot).",
+        kind="float",
+        min_value=0.7,
+        max_value=1.3,
+        step=0.01,
         easy=True,
+    ),
+    FieldMeta(
+        key="axialTilt",
+        label="Axial tilt",
+        group="easy",
+        default=0.0,
+        effect="Shifts the hot band away from the equator (0 ≈ Earth-like).",
+        in_game="Moves where the tropics and poles sit on the map.",
+        up="Hot band moves toward one pole.",
+        down="Hot band moves toward the other pole, or back to the equator.",
+        kind="float",
+        min_value=-0.15,
+        max_value=0.15,
+        step=0.01,
+        easy=True,
+    ),
+    FieldMeta(
+        key="climateExtremes",
+        label="Climate extremes",
+        group="easy",
+        default=0.5,
+        effect="Width of the °C window around the sun-distance heat bias. Middle at Earth orbit ≈ −20…40 °C.",
+        in_game="Narrow keeps climates near that bias (hot planet stays hot; cold stays cold). Wide still spans harsh poles and tropics.",
+        up="Wider °C range around the orbit bias.",
+        down="Narrower °C band toward the orbit bias (hot→hotter band, cold→colder band).",
+        kind="float",
+        min_value=0.0,
+        max_value=1.0,
+        step=0.05,
+        easy=True,
+    ),
+    FieldMeta(
+        key="precipGamma",
+        label="Precipitation (wet/dry)",
+        group="easy",
+        default=1.25,
+        effect="How strongly cold land dries out. Higher values make cold regions drier.",
+        in_game="Changes wet and dry biomes; does not set the °C range.",
+        up="Drier cold regions; stronger wet–dry contrast.",
+        down="More even moisture; cold land stays wetter.",
+        kind="float",
+        min_value=0.5,
+        max_value=3.0,
+        step=0.05,
+        easy=True,
+    ),
+    FieldMeta(
+        key="precipGammaOffset",
+        label="Precipitation gamma offset",
+        group="climate",
+        default=0.2,
+        effect="Minimum moisture left after the wet/dry curve, so poles are not forced bone-dry.",
+        in_game="Higher keeps a bit of moisture even in very dry cold areas.",
+        up="Less bone-dry poles.",
+        down="Allows drier cold extremes.",
+        kind="float",
+        min_value=0.0,
+        max_value=0.5,
+        step=0.05,
+        easy=False,
     ),
     FieldMeta(
         key="numberOfPlates",
         label="Number of plates",
         group="tectonics",
         default=7,
-        effect="How many tectonic plates compete during platec simulation.",
-        in_game="More plates → more fragmented continents and island chains; fewer → larger landmasses.",
-        up="Archipelagos, broken coasts, more plate-boundary mountains.",
-        down="Big continents, simpler coast outlines.",
+        effect="How many tectonic plates shape the continents.",
+        in_game="More plates mean broken coasts and island chains; fewer mean larger landmasses.",
+        up="More islands and fragmented continents.",
+        down="Bigger, simpler continents.",
         kind="int",
         min_value=3,
         max_value=20,
@@ -143,9 +206,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Folding ratio",
         group="tectonics",
         default=0.06,
-        effect="Platec orogeny strength when plates collide.",
-        in_game="Stronger folding → taller / sharper mountain belts along plate edges.",
-        up="Younger, punchier ranges.",
+        effect="How strongly colliding plates push up mountains.",
+        in_game="Stronger folding makes taller, sharper mountain belts along plate edges.",
+        up="Taller, sharper ranges.",
         down="Gentler hills; mountains less dominant.",
         kind="float",
         min_value=0.0,
@@ -157,10 +220,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Plate erosion period",
         group="tectonics",
         default=90,
-        effect="Tectonic erosion interval inside platec (higher = more mature landscape).",
-        in_game="Higher values wear sharp uplift into softer, older-looking terrain.",
-        up="More mature / rounded relief.",
-        down="Rougher, less eroded uplift.",
+        effect="How much tectonic erosion rounds the landscape during generation (higher = more worn).",
+        in_game="Higher values look older and softer; lower values look sharper and younger.",
+        up="More rounded, mature relief.",
+        down="Rougher, less worn uplift.",
         kind="int",
         min_value=10,
         max_value=200,
@@ -171,10 +234,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Simulation cycles",
         group="tectonics",
         default=3,
-        effect="How many platec simulation cycles to run.",
-        in_game="More cycles deepen plate interaction (coasts and ranges evolve further).",
-        up="More developed tectonics (slower).",
-        down="Faster, simpler plate layout.",
+        effect="How many tectonic simulation passes to run.",
+        in_game="More cycles further develop coasts and mountain belts (and take longer).",
+        up="More developed tectonics; slower.",
+        down="Faster; simpler plate layout.",
         kind="int",
         min_value=1,
         max_value=8,
@@ -185,10 +248,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Elevation noise octaves",
         group="relief",
         default=4,
-        effect="Simplex octaves added on top of plate elevation.",
-        in_game="Adds fine hills and texture instead of pure tectonic slabs.",
+        effect="Layers of fine elevation noise on top of tectonic shape.",
+        in_game="Adds small hills and surface texture instead of flat tectonic slabs.",
         up="Richer local roughness.",
-        down="Smoother, more 'plate-only' land.",
+        down="Smoother, more slab-like land.",
         kind="int",
         min_value=0,
         max_value=8,
@@ -199,9 +262,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Elevation noise amplitude",
         group="relief",
         default=0.65,
-        effect="Strength of elevation noise relative to plate heights.",
-        in_game="Higher → bumpier interiors and noisier coastlines before shelf rewrite.",
-        up="Craggy / irregular terrain.",
+        effect="Strength of fine elevation noise relative to tectonic height.",
+        in_game="Higher makes bumpier interiors and more irregular coasts.",
+        up="Craggier, more irregular terrain.",
         down="Cleaner large-scale shapes.",
         kind="float",
         min_value=0.0,
@@ -213,10 +276,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Elevation blur passes",
         group="relief",
         default=2,
-        effect="Anti-alias passes on elevation before ocean classification.",
-        in_game="Softens jagged height artifacts; too much can melt sharp ridges.",
-        up="Smoother heightfields.",
-        down="Crisper (possibly noisier) relief.",
+        effect="Smoothing passes on height before land and ocean are classified.",
+        in_game="Softens jagged height noise; too much can blur sharp ridges.",
+        up="Smoother height.",
+        down="Crisper, possibly noisier relief.",
         kind="int",
         min_value=0,
         max_value=8,
@@ -227,10 +290,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Peak mix",
         group="relief",
         default=0.55,
-        effect="Weight of plate-boundary mountain boost.",
-        in_game="How strongly mountain belts punch above surrounding land.",
-        up="Dramatic ranges / highland belts.",
-        down="Flatter continents; mountains less special.",
+        effect="How strongly plate-boundary mountains are boosted.",
+        in_game="Controls how much mountain belts stand above the surrounding land.",
+        up="More dramatic ranges and highlands.",
+        down="Flatter continents; mountains less distinct.",
         kind="float",
         min_value=0.0,
         max_value=1.0,
@@ -241,8 +304,8 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Peak slope",
         group="relief",
         default=12.0,
-        effect="Distance-field falloff for mountain boost.",
-        in_game="Higher → peaks stay narrow; lower → wide highland shoulders.",
+        effect="How quickly mountain boost falls off with distance from plate boundaries.",
+        in_game="Higher keeps peaks narrow; lower makes wide highland shoulders.",
         up="Narrower mountain spines.",
         down="Broader elevated regions.",
         kind="float",
@@ -255,10 +318,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf radius",
         group="coasts",
         default=0,
-        effect="Continental shelf width in cells; 0 = auto from map size (~24 at 1024).",
-        in_game="Controls how wide the soft nearshore bathymetry band is before deep ocean.",
-        up="Wider shelves / longer shallows (explicit cell count).",
-        down="0 keeps auto scaling; small values pinch the shelf.",
+        effect="Continental shelf width in cells. 0 picks a width automatically from map size.",
+        in_game="How wide the shallow nearshore band is before deep ocean.",
+        up="Wider shelves and longer shallows.",
+        down="0 uses auto width; small values pinch the shelf.",
         kind="int",
         min_value=0,
         max_value=128,
@@ -269,8 +332,8 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf shallow floor",
         group="coasts",
         default=0.08,
-        effect="Near-coast relative depth floor on the soft shelf curve.",
-        in_game="Keeps immediate offshore water from snapping to deep marine too soon.",
+        effect="How shallow water stays right next to the coast on the shelf curve.",
+        in_game="Keeps water just offshore from dropping to deep sea too quickly.",
         up="Shallower nearshore flats.",
         down="Steeper drop just off the beach.",
         kind="float",
@@ -283,10 +346,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf break bias",
         group="coasts",
         default=0.65,
-        effect="Shallow-zone bias along distance→depth; higher = longer soft shelf.",
-        in_game="Wider soft shelf → more we-shallows / we-shelf landforms and gentler OceanMap ramps.",
-        up="Long continental shelves.",
-        down="Shelf ends sooner; deeper water closer to shore.",
+        effect="How far the soft shallow shelf extends before deeper water.",
+        in_game="Wider soft shelves mean more shallow nearshore water and gentler depth change offshore.",
+        up="Longer continental shelves.",
+        down="Shelf ends sooner; deep water closer to shore.",
         kind="float",
         min_value=0.1,
         max_value=0.95,
@@ -297,9 +360,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf falloff",
         group="coasts",
         default=2.2,
-        effect="Power on soft distance→depth curve (higher = gentler).",
-        in_game="Gentler curves feel like sandy shelves; lower power feels cliffier.",
-        up="Softer bathymetry gradient.",
+        effect="How gently depth increases across the shelf (higher = gentler).",
+        in_game="Gentler shelves feel sandy; lower values feel more cliff-like.",
+        up="Softer depth gradient.",
         down="Harder shelf edge.",
         kind="float",
         min_value=0.5,
@@ -311,10 +374,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf blur passes",
         group="coasts",
         default=3,
-        effect="Anti-alias passes on ocean elevation after shelf rewrite.",
-        in_game="Smooths shelf artifacts so wet landforms don't stripe.",
+        effect="Smoothing passes on ocean depth after the shelf is applied.",
+        in_game="Smooths underwater contours so shallow bands look less striped.",
         up="Smoother underwater contours.",
-        down="More literal / noisier shelf.",
+        down="More literal, noisier shelf.",
         kind="int",
         min_value=0,
         max_value=8,
@@ -325,8 +388,8 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Noisy coastlines",
         group="coasts",
         default=0.045,
-        effect="Mapgen4-style coast warp near sea level.",
-        in_game="Breaks ruler-straight coasts into bays and headlands.",
+        effect="Warps the coastline near sea level to break straight edges.",
+        in_game="Turns ruler-straight coasts into bays and headlands.",
         up="Ragged, island-friendly shores.",
         down="Smoother continental outlines.",
         kind="float",
@@ -339,10 +402,10 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf width noise",
         group="coasts",
         default=0.45,
-        effect="Alongshore variation in shelf width.",
-        in_game="Some coasts get broad shallows, others pinch — more natural variety.",
-        up="Strong shelf width variation.",
-        down="Uniform shelf width.",
+        effect="How much shelf width varies along the coast.",
+        in_game="Some coasts get broad shallows; others pinch in.",
+        up="Stronger shelf width variation.",
+        down="More uniform shelf width.",
         kind="float",
         min_value=0.0,
         max_value=1.0,
@@ -353,9 +416,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf depth noise",
         group="coasts",
         default=0.4,
-        effect="Alongshore noise on shelf depth.",
-        in_game="Pockets of deeper/shallower water along the same coast.",
-        up="More bathymetric texture.",
+        effect="How much shelf depth varies along the coast.",
+        in_game="Pockets of deeper or shallower water along the same shore.",
+        up="More uneven seafloor near shore.",
         down="Flatter shelf floor.",
         kind="float",
         min_value=0.0,
@@ -367,8 +430,8 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf ocean depth scale",
         group="coasts",
         default=1.4,
-        effect="Scales how deep the shelf curve pushes open ocean.",
-        in_game="Higher → deeper OceanMap / we-deepwet farther offshore.",
+        effect="How deep open ocean becomes beyond the shelf.",
+        in_game="Higher means deeper water farther offshore.",
         up="Deeper open water.",
         down="Milder offshore depths.",
         kind="float",
@@ -381,9 +444,9 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Shelf blend",
         group="coasts",
         default=0.5,
-        effect="Blend soft shelf curve with residual platec bathymetry.",
-        in_game="0 = pure shelf curve; 1 = keep more tectonic ocean trenches/rises.",
-        up="More leftover platec ocean shape.",
+        effect="Mix between the smooth shelf curve and leftover tectonic seafloor shape.",
+        in_game="0 is a clean designed shelf; 1 keeps more trenches and rises from tectonics.",
+        up="More leftover tectonic ocean shape.",
         down="Cleaner designed shelf profile.",
         kind="float",
         min_value=0.0,
@@ -393,24 +456,25 @@ FIELD_META: tuple[FieldMeta, ...] = (
     FieldMeta(
         key="oceanLevel",
         label="Ocean level",
-        group="climate",
+        group="easy",
         default=1.0,
-        effect="Elevation cutoff used as sea level during generation.",
-        in_game="Higher → more ocean / less land; lower → larger continents.",
-        up="Wetters world, more coastline.",
+        effect="Sea level used while generating the planet.",
+        in_game="Higher means more ocean and less land; lower means larger continents.",
+        up="More ocean and coastline.",
         down="More landmass.",
         kind="float",
         min_value=0.5,
         max_value=1.5,
         step=0.05,
+        easy=True,
     ),
     FieldMeta(
         key="blocksPerCell",
         label="Blocks per cell",
         group="pack",
         default=32,
-        effect="Native-mode hint stored in the .vsplanet header.",
-        in_game="Only matters if you switch the mod to native scale; Fit mode ignores it for sizing.",
+        effect="Native-scale hint stored in the planet file header.",
+        in_game="Only matters if the mod uses native scale; Fit mode ignores it for world size.",
         up="Coarser native sampling.",
         down="Finer native sampling.",
         kind="int",
@@ -420,41 +484,43 @@ FIELD_META: tuple[FieldMeta, ...] = (
     ),
     FieldMeta(
         key="tempMinC",
-        label="Runtime temp min °C",
+        label="Coldest climate °C",
         group="runtime",
         default=-20.0,
-        effect="Written into mod config: maps packed 0 → this °C.",
-        in_game="Cold end of ClimateMap after normalize (or absolute WE) temperature.",
-        up="Warmer 'coldest' biomes.",
-        down="Harsher polar end.",
+        effect="Cold end of the in-game °C window (Easy sets this from sun distance + Climate extremes).",
+        in_game="Cold end of the climate map.",
+        up="Warmer coldest biomes.",
+        down="Harsher polar climates.",
         kind="float",
         min_value=-50.0,
-        max_value=10.0,
+        max_value=40.0,
         step=1.0,
+        easy=False,
     ),
     FieldMeta(
         key="tempMaxC",
-        label="Runtime temp max °C",
+        label="Hottest climate °C",
         group="runtime",
         default=40.0,
-        effect="Written into mod config: maps packed 1 → this °C.",
-        in_game="Hot end of ClimateMap.",
+        effect="Hot end of the in-game °C window (Easy sets this from sun distance + Climate extremes).",
+        in_game="Hot end of the climate map.",
         up="Hotter tropics.",
-        down="Milder hot end.",
+        down="Milder hot climates.",
         kind="float",
-        min_value=10.0,
+        min_value=-20.0,
         max_value=60.0,
         step=1.0,
+        easy=False,
     ),
     FieldMeta(
         key="grayscaleHeightmap",
         label="Write grayscale heightmap",
         group="output",
         default=True,
-        effect="Also writes <name>_grayscale.png beside other previews.",
-        in_game="Preview only; not used by the VS mod.",
+        effect="Also writes a grayscale height preview next to the other images.",
+        in_game="Preview only; not used by the game.",
         up="Extra preview file.",
-        down="Skip grayscale PNG.",
+        down="Skip the grayscale image.",
         kind="bool",
     ),
     FieldMeta(
@@ -462,7 +528,7 @@ FIELD_META: tuple[FieldMeta, ...] = (
         label="Verbose generation",
         group="output",
         default=True,
-        effect="Prints WorldEngine progress to the log.",
+        effect="Writes detailed generation progress to the log.",
         in_game="No gameplay effect.",
         up="More log detail.",
         down="Quieter log.",
@@ -481,7 +547,11 @@ class PlanetConfig:
     width: int = 2048
     height: int = 2048
     preset: str = "balanced"
-    normalizeTemperature: bool = True
+    distanceToSun: float = 1.0
+    axialTilt: float = 0.0
+    climateExtremes: float = 0.5
+    precipGamma: float = 1.25
+    precipGammaOffset: float = 0.2
     numberOfPlates: int = 7
     foldingRatio: float = 0.06
     plateErosionPeriod: int = 90
@@ -511,9 +581,7 @@ class PlanetConfig:
     planetFileName: str = "example.vsplanet"
 
     def planet_asset_name(self) -> str:
-        # Default to example.vsplanet so ModConfig overlays (which almost always
-        # keep PlanetAssetPath = worldengine:planets/example.vsplanet) still resolve.
-        # World `name` is only for output folders / zip naming, not the in-mod asset id.
+        # In-mod asset id (default example.vsplanet); world `name` is for output folders/zips only.
         base = self.planetFileName.strip() or "example"
         if not base.lower().endswith(".vsplanet"):
             base = f"{base}.vsplanet"
@@ -563,8 +631,8 @@ class PlanetConfig:
             raise ValueError("World name must not be empty")
         if float(self.tempMinC) >= float(self.tempMaxC):
             raise ValueError(
-                f"Runtime temp min °C ({self.tempMinC}) must be less than "
-                f"Runtime temp max °C ({self.tempMaxC})"
+                f"Coldest climate °C ({self.tempMinC}) must be less than "
+                f"Hottest climate °C ({self.tempMaxC})"
             )
         # Guard against pathological map sizes even if metadata is bypassed.
         for dim_name, dim in (("Width (cells)", self.width), ("Height (cells)", self.height)):
@@ -619,6 +687,46 @@ def parse_field_value(meta: FieldMeta, raw: Any) -> Any:
 
 def default_config() -> PlanetConfig:
     return PlanetConfig()
+
+
+def climate_window_from_extremes(
+    extremes: float,
+    distance_to_sun: float = 1.0,
+) -> tuple[float, float]:
+    """
+    Build (tempMinC, tempMaxC) from Easy climate controls.
+
+    - climateExtremes sets the *width* of the °C window (half-span 10…50).
+    - distanceToSun shifts the *center* of that window (Earth 1.0 → 10 °C;
+      closer → hotter center; farther → colder center).
+
+    Mid extremes at Earth orbit still yields ≈ −20…40 °C.
+    """
+    t = max(0.0, min(1.0, float(extremes)))
+    half = 10.0 + t * 40.0  # 10…50
+
+    # distance 0.7 → +1 heat, 1.0 → 0, 1.3 → −1
+    dist = max(0.7, min(1.3, float(distance_to_sun)))
+    heat = (1.0 - dist) / 0.3
+    center = 10.0 + heat * 25.0  # 35 °C closest … −15 °C farthest
+
+    lo = center - half
+    hi = center + half
+    # Keep within a sensible Vintage Story climate span.
+    lo = max(-50.0, min(40.0, lo))
+    hi = max(-20.0, min(60.0, hi))
+    if hi <= lo + 5.0:
+        mid = 0.5 * (lo + hi)
+        lo, hi = mid - 2.5, mid + 2.5
+    return lo, hi
+
+
+def apply_climate_extremes(cfg: PlanetConfig) -> PlanetConfig:
+    """Write tempMinC/tempMaxC from sun distance + Climate extremes (Easy controls)."""
+    lo, hi = climate_window_from_extremes(cfg.climateExtremes, cfg.distanceToSun)
+    cfg.tempMinC = lo
+    cfg.tempMaxC = hi
+    return cfg
 
 
 def iter_field_meta(group: str | None = None, easy_only: bool = False) -> Iterator[FieldMeta]:

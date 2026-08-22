@@ -592,39 +592,77 @@ def draw_world(world, target):
                 target.set_pixel(x, y, (0, 0, 255 - c, 255))
 
 
-def draw_temperature_levels(world, target, black_and_white=False):
+def _ramp_blue_to_red(u):
+    """Map u in [0,1] to blue→cyan→yellow→red."""
+    if u < 0.33:
+        s = u / 0.33
+        return 0, int(255 * s), 255
+    if u < 0.66:
+        s = (u - 0.33) / 0.33
+        return int(255 * s), 255, int(255 * (1.0 - s))
+    s = (u - 0.66) / 0.34
+    return 255, int(255 * (1.0 - s)), 0
+
+
+def draw_temperature_levels(world, target, black_and_white=False, temp_min_c=None, temp_max_c=None):
+    """
+    Paint temperature so orbit and climate-window choices are visible.
+
+    If temp_min_c/temp_max_c are set (PlanetKit), colors match the in-game path:
+    clip WE values to [0,1], map onto that °C window, then paint on a *fixed*
+    absolute °C scale (−50…55). Close-in orbits push more cells toward the hot
+    end; a narrow °C window compresses colors (mostly one temperature band).
+
+    Without a °C window, fall back to a fixed WE-unit scale (0…1.25).
+    """
     width = world.width
     height = world.height
+    data = world.temperature  # Layer data ndarray (property returns .data)
+
+    use_celsius = temp_min_c is not None and temp_max_c is not None
+    if use_celsius:
+        c_lo = float(temp_min_c)
+        c_hi = float(temp_max_c)
+        if c_hi <= c_lo:
+            c_hi = c_lo + 1.0
+        # Fixed legend so a 30 °C planet and a −20 °C planet do not look identical.
+        legend_lo = -50.0
+        legend_hi = 55.0
+        span_leg = legend_hi - legend_lo
+    else:
+        # Earth-like orbit peaks near ~1.0; closer sun can exceed 1.0 after inverse-square.
+        abs_lo = 0.0
+        abs_hi = 1.25
 
     if black_and_white:
-        low = world.temperature_thresholds()[0][1]
-        high = world.temperature_thresholds()[5][1]
-        floor = 0
-        ceiling = 255  # could be changed into 16 Bit grayscale easily
-
-        colors = numpy.interp(world.temperature["data"], [low, high], [floor, ceiling])
-        colors = numpy.rint(colors).astype(dtype=numpy.int32)  # proper rounding
+        if use_celsius:
+            we = numpy.clip(data, 0.0, 1.0)
+            celsius = c_lo + we * (c_hi - c_lo)
+            colors = numpy.interp(celsius, [legend_lo, legend_hi], [0, 255])
+        else:
+            colors = numpy.interp(data, [abs_lo, abs_hi], [0, 255])
+        colors = numpy.rint(numpy.clip(colors, 0, 255)).astype(dtype=numpy.int32)
         for y in range(height):
             for x in range(width):
-                target.set_pixel(x, y, (colors[y, x], colors[y, x], colors[y, x], 255))
+                c = int(colors[y, x])
+                target.set_pixel(x, y, (c, c, c, 255))
+        return
 
-    else:
-        for y in range(height):
-            for x in range(width):
-                if world.is_temperature_polar((x, y)):
-                    target.set_pixel(x, y, (0, 0, 255, 255))
-                elif world.is_temperature_alpine((x, y)):
-                    target.set_pixel(x, y, (42, 0, 213, 255))
-                elif world.is_temperature_boreal((x, y)):
-                    target.set_pixel(x, y, (85, 0, 170, 255))
-                elif world.is_temperature_cool((x, y)):
-                    target.set_pixel(x, y, (128, 0, 128, 255))
-                elif world.is_temperature_warm((x, y)):
-                    target.set_pixel(x, y, (170, 0, 85, 255))
-                elif world.is_temperature_subtropical((x, y)):
-                    target.set_pixel(x, y, (213, 0, 42, 255))
-                elif world.is_temperature_tropical((x, y)):
-                    target.set_pixel(x, y, (255, 0, 0, 255))
+    for y in range(height):
+        for x in range(width):
+            t = float(data[y, x])
+            if use_celsius:
+                we = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+                celsius = c_lo + we * (c_hi - c_lo)
+                u = (celsius - legend_lo) / span_leg
+            else:
+                u = (t - abs_lo) / (abs_hi - abs_lo)
+            if u < 0.0:
+                u = 0.0
+            elif u > 1.0:
+                u = 1.0
+            r, g, b = _ramp_blue_to_red(u)
+            target.set_pixel(x, y, (r, g, b, 255))
 
 
 def draw_biome(world, target):
@@ -802,9 +840,9 @@ def draw_world_on_file(world, filename):
     img.complete()
 
 
-def draw_temperature_levels_on_file(world, filename, black_and_white=False):
+def draw_temperature_levels_on_file(world, filename, black_and_white=False, temp_min_c=None, temp_max_c=None):
     img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
-    draw_temperature_levels(world, img, black_and_white)
+    draw_temperature_levels(world, img, black_and_white, temp_min_c=temp_min_c, temp_max_c=temp_max_c)
     img.complete()
 
 

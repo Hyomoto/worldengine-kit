@@ -29,17 +29,11 @@ def kit_root() -> Path:
 
 
 def ensure_import_paths(root: Path | None = None) -> Path:
-    """Put vendored packer on sys.path; WorldEngine comes from the venv/frozen bundle."""
+    """Prefer vendored WorldEngine/packer so PlanetKit patches always win over site-packages."""
     root = root or kit_root()
-    packer = root / "vendor" / "packer"
-    s = str(packer)
-    if packer.is_dir() and s not in sys.path:
-        sys.path.insert(0, s)
-    we = root / "vendor" / "worldengine"
-    try:
-        import worldengine  # noqa: F401
-    except ImportError:
-        ws = str(we)
-        if we.is_dir() and ws not in sys.path:
-            sys.path.insert(0, ws)
+    for rel in ("vendor/worldengine", "vendor/packer"):
+        path = root / Path(rel)
+        s = str(path)
+        if path.is_dir() and s not in sys.path:
+            sys.path.insert(0, s)
     return root

@@ -88,6 +88,8 @@ class World:
         humids=[0.941, 0.778, 0.507, 0.236, 0.073, 0.014, 0.002],
         gamma_curve=1.25,
         curve_offset=0.2,
+        distance_to_sun=1.0,
+        axial_tilt=0.0,
     ):
         self.name = name
         self.size = size
@@ -96,6 +98,8 @@ class World:
         self.humids = humids
         self.gamma_curve = gamma_curve
         self.curve_offset = curve_offset
+        self.distance_to_sun = float(distance_to_sun)
+        self.axial_tilt = float(axial_tilt)
 
         self.generation_params = generation_params
 

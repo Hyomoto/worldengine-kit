@@ -18,7 +18,6 @@ INCLUDE_FILES = (
     "setup.bat",
     "PlanetKit.bat",
     "clean.bat",
-    "pack_release.bat",
     "requirements.txt",
     "pyproject.toml",
     "planetkit_app.py",
@@ -60,6 +59,8 @@ SKIP_FILE_NAMES = {
     ".pre-commit-config.yaml",
     ".python-version",
     "planet.json",  # machine-local last-used config
+    "pack_release.py",  # maintainer-only; not for end-user kits
+    "pack_release.bat",
 }
 
 

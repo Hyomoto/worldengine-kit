@@ -33,11 +33,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_gen.add_argument("--seed", type=int, help="Override seed")
     p_gen.add_argument("--width", type=int, help="Override width")
     p_gen.add_argument("--height", type=int, help="Override height")
-    p_gen.add_argument(
-        "--no-normalize-temperature",
-        action="store_true",
-        help="Keep absolute WE temperatures (cold planets stay cold)",
-    )
     p_gen.add_argument("--skip-assemble", action="store_true", help="Only generate and pack")
 
     p_gui = sub.add_parser("gui", help="Open the PlanetKit window")
@@ -89,8 +84,6 @@ def cmd_generate(args: argparse.Namespace) -> int:
         cfg.width = args.width
     if args.height is not None:
         cfg.height = args.height
-    if args.no_normalize_temperature:
-        cfg.normalizeTemperature = False
 
     result = run_pipeline(cfg, skip_assemble=bool(args.skip_assemble))
     print("Artifacts:")

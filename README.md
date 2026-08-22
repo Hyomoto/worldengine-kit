@@ -44,13 +44,14 @@ clean.bat                 # delete venv/dist/build/output/caches
 pack_release.bat          # clean + zip lean kit -> release\worldengine-kit-YYYYMMDD.zip
 ```
 
-The release zip is the **source kit** (users run `setup.bat`). For a frozen Windows build, run `setup.bat` then `scripts\build_pyinstaller.bat`, then zip only `dist\WorldEnginePlanetKit\` (exclude any `output\` folder inside it).
+`pack_release` is maintainer-only and is **not** included inside the zip it produces. The release zip is the **source kit** (users run `setup.bat`). For a frozen Windows build, run `setup.bat` then `scripts\build_pyinstaller.bat`, then zip only `dist\WorldEnginePlanetKit\` (exclude any `output\` folder inside it).
 
 The playable VS mod alone is the tiny `*-worldengine.zip` produced by PlanetKit generate, or `mod-template/` after you inject a planet — not the whole kit.
 
 ## Defaults that matter
 
-- **Normalize temperature is ON** in kit presets and Easy mode so VS can map the planet onto a full −20…40 °C spectrum (all biomes reachable). Turn it off only if you want a deliberately cold/hot absolute WE climate.
+- **Easy climate sliders** (Earth-like defaults): ocean level, distance to sun, axial tilt, climate extremes (middle ≈ −20…40 °C), and precipitation wet/dry.
+- Pack keeps **absolute** WorldEngine temperatures (no normalize stretch). **Distance to sun** shifts the °C window center (hotter/colder bias); **Climate extremes** sets that window’s width. Together they define the final in-game climate range. Advanced still exposes raw `tempMinC` / `tempMaxC`.
 - The packed planet is always installed as **`example.vsplanet`** (world name only affects output/zip names). That matches the live mod path and typical `ModConfig/worldengine.json` `PlanetAssetPath`. Shipping under the generation name caused `Planet asset not found` when ModConfig still pointed at `example.vsplanet`.
 - Generation knobs match the custom WorldEngine fork (shelf, coast noise, peaks). Ancient-map / HDF5 surfaces are not exposed.
 

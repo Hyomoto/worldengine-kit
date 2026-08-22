@@ -10,7 +10,7 @@ from typing import Callable
 
 from planetkit.assemble import assemble_mod
 from planetkit.paths import ensure_import_paths, user_root
-from planetkit.schema import PlanetConfig, save_config
+from planetkit.schema import PlanetConfig, apply_climate_extremes, save_config
 
 LogFn = Callable[[str], None]
 
@@ -98,6 +98,10 @@ def generate_world_files(cfg: PlanetConfig, work_dir: Path, *, log: LogFn | None
             world_format="protobuf",
             fade_borders=True,
             verbose=bool(cfg.verbose),
+            gamma_curve=float(cfg.precipGamma),
+            curve_offset=float(cfg.precipGammaOffset),
+            distance_to_sun=float(cfg.distanceToSun),
+            axial_tilt=float(cfg.axialTilt),
             folding_ratio=cfg.foldingRatio,
             plate_erosion_period=cfg.plateErosionPeriod,
             cycle_count=cfg.cycleCount,
@@ -116,11 +120,29 @@ def generate_world_files(cfg: PlanetConfig, work_dir: Path, *, log: LogFn | None
             shelf_blur_steps=cfg.shelfBlurSteps,
             peak_mix=cfg.peakMix,
             peak_slope=cfg.peakSlope,
+            temp_min_c=float(cfg.tempMinC),
+            temp_max_c=float(cfg.tempMaxC),
         )
         if cfg.grayscaleHeightmap:
             generate_grayscale_heightmap(world, f"{work_dir.as_posix()}/{cfg.name}_grayscale.png")
     if isinstance(out_stream, _LogStream):
         out_stream.flush()
+
+    # Verify orbit / climate window against what the temperature preview encodes.
+    try:
+        import numpy as np
+
+        t = np.asarray(world.temperature, dtype=float)
+        _emit(
+            "Temperature WE units: "
+            f"min={float(t.min()):.3f} mean={float(t.mean()):.3f} max={float(t.max()):.3f} | "
+            f"sun={float(cfg.distanceToSun):.2f} | "
+            f"in-game window {float(cfg.tempMinC):.0f}...{float(cfg.tempMaxC):.0f} C "
+            "(preview uses this C window on a fixed color scale)",
+            log,
+        )
+    except Exception as exc:
+        _emit(f"Temperature summary skipped: {exc}", log)
 
     world_path = work_dir / f"{cfg.name}.world"
     if not world_path.is_file():
@@ -141,16 +163,16 @@ def pack_planet(
 
     planet_name = cfg.planet_asset_name()
     out_path = work_dir / planet_name
+    # Absolute WE temps: orbit distance/tilt bias survives into VS (no min–max stretch).
     _emit(
-        f"Packing {world_path.name} -> {out_path.name} "
-        f"(normalizeTemperature={cfg.normalizeTemperature}) ...",
+        f"Packing {world_path.name} -> {out_path.name} (normalizeTemperature=False) ...",
         log,
     )
     pack_world(
         world_path,
         out_path,
         blocks_per_cell=cfg.blocksPerCell,
-        normalize_temperature=bool(cfg.normalizeTemperature),
+        normalize_temperature=False,
     )
     if not out_path.is_file():
         raise FileNotFoundError(f"Packer did not write {out_path}")
@@ -166,6 +188,7 @@ def run_pipeline(
     skip_assemble: bool = False,
 ) -> dict[str, Path]:
     """Generate, pack, and assemble. Returns key paths."""
+    apply_climate_extremes(cfg)
     cfg.validate()
     root = user_root()
     work_dir = resolve_output_dir(cfg, root)

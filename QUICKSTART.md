@@ -22,7 +22,12 @@ You can also run `PlanetKit.bat doctor` any time to print the same diagnostic re
    - **balanced** — default shelf/peak tuning
    - **continental** — fewer plates, softer/wider shelves
    - **archipelago** — more plates, noisier coasts
-4. Leave **Normalize temperature** checked unless you want a permanently cold (or hot) planet.
+4. Use the climate sliders (defaults are Earth-like):
+   - **Ocean level** — more ocean vs more land
+   - **Distance to sun** — closer = hotter, farther = colder
+   - **Axial tilt** — shifts where the hot band sits
+   - **Climate extremes** — middle ≈ −20…40 °C in Vintage Story; lower caps extremes, higher widens them
+   - **Precipitation (wet/dry)** — higher = drier cold regions
 5. Click **Generate & pack mod**. Generation can take several minutes.
 6. When finished, copy the zip path (**Copy zip path**) and place `*-worldengine.zip` in your Vintage Story `Mods` folder.
 
@@ -38,7 +43,7 @@ PlanetKit.bat generate --preset balanced --name myworld --seed 123 --width 1024 
 PlanetKit.bat presets
 ```
 
-Use `--no-normalize-temperature` to keep absolute WorldEngine temperatures.
+Temperature packing keeps absolute WorldEngine values (no normalize stretch). Orbit knobs and climate extremes together define non-standard climates; the same seed no longer rolls a random orbit lottery.
 
 ## After installing the mod
 

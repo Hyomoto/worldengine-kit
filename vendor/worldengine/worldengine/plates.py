@@ -89,6 +89,8 @@ def _plates_simulation(
     humids=[0.941, 0.778, 0.507, 0.236, 0.073, 0.014, 0.002],
     gamma_curve=1.25,
     curve_offset=0.2,
+    distance_to_sun=1.0,
+    axial_tilt=0.0,
     num_plates=10,
     ocean_level=1.0,
     step=Step.full(),
@@ -119,6 +121,8 @@ def _plates_simulation(
         humids,
         gamma_curve,
         curve_offset,
+        distance_to_sun,
+        axial_tilt,
     )
     world.elevation = (numpy.array(e_as_array).reshape(height, width), None)
     world.plates = numpy.array(p_as_array, dtype=numpy.uint16).reshape(height, width)
@@ -137,6 +141,8 @@ def world_gen(
     step=Step.full(),
     gamma_curve=1.25,
     curve_offset=0.2,
+    distance_to_sun=1.0,
+    axial_tilt=0.0,
     fade_borders=True,
     verbose=get_verbose(),
     folding_ratio=DEFAULT_FOLDING_RATIO,
@@ -170,6 +176,8 @@ def world_gen(
         humids,
         gamma_curve,
         curve_offset,
+        distance_to_sun,
+        axial_tilt,
         num_plates,
         ocean_level,
         step,

@@ -19,6 +19,7 @@ from planetkit.schema import (
     FIELD_META,
     META_BY_KEY,
     PlanetConfig,
+    apply_climate_extremes,
     apply_preset,
     default_config,
     list_presets,
@@ -39,6 +40,10 @@ class PlanetKitApp(tk.Tk):
         self._env_ok = True
         self._ui_q: queue.Queue[tuple[str, Any]] = queue.Queue()
         self._help = tk.StringVar(value="Select a control to see what it changes.")
+        # ttk.Scale is unreliable for ranges that cross zero / tiny spans; UI uses 0..1.
+        self._slider_ui: dict[str, tk.DoubleVar] = {}
+        self._slider_range: dict[str, tuple[float, float, float | None]] = {}
+        self._slider_refresh: dict[str, Any] = {}
 
         try:
             self.cfg = load_config(config_path) if config_path else load_config()
@@ -130,13 +135,11 @@ class PlanetKitApp(tk.Tk):
         self._add_seed_row(form, 1)
         self._add_size_row(form, 2)
         self._add_preset_row(form, 3)
-        self._add_bool(form, "normalizeTemperature", 4)
-
-        tip = (
-            "Easy mode: pick a style, seed, and size. Normalize temperature stays ON so "
-            "Vintage Story can see a full biome spectrum from the packed planet."
-        )
-        ttk.Label(parent, text=tip, wraplength=700, justify=tk.LEFT).pack(anchor=tk.W, pady=(12, 0))
+        self._add_slider(form, "oceanLevel", 4)
+        self._add_slider(form, "distanceToSun", 5)
+        self._add_slider(form, "axialTilt", 6)
+        self._add_slider(form, "climateExtremes", 7)
+        self._add_slider(form, "precipGamma", 8)
 
     def _build_advanced(self, parent: ttk.Frame) -> None:
         canvas = tk.Canvas(parent, highlightthickness=0)
@@ -148,9 +151,22 @@ class PlanetKitApp(tk.Tk):
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+        # Identity + Easy climate sliders stay off Advanced (temps stay Advanced for override).
+        skip = {
+            "name",
+            "seed",
+            "width",
+            "height",
+            "preset",
+            "oceanLevel",
+            "distanceToSun",
+            "axialTilt",
+            "climateExtremes",
+            "precipGamma",
+        }
         groups: dict[str, list] = {}
         for meta in FIELD_META:
-            if meta.easy or meta.key in ("name", "seed", "width", "height", "preset", "normalizeTemperature"):
+            if meta.easy or meta.key in skip:
                 continue
             groups.setdefault(meta.group, []).append(meta)
 
@@ -277,6 +293,91 @@ class PlanetKitApp(tk.Tk):
         spin.grid(row=row, column=1, sticky=tk.W, pady=2)
         self._bind_help(spin, key)
 
+    def _add_slider(self, parent: ttk.Frame, key: str, row: int) -> None:
+        meta = META_BY_KEY[key]
+        ttk.Label(parent, text=meta.label).grid(row=row, column=0, sticky=tk.W, pady=2)
+        lo = float(meta.min_value if meta.min_value is not None else 0.0)
+        hi = float(meta.max_value if meta.max_value is not None else 1.0)
+        step = float(meta.step) if meta.step is not None else None
+        default = float(meta.default)
+        real = tk.DoubleVar(value=default)
+        self.vars[key] = real
+        self._slider_range[key] = (lo, hi, step)
+
+        span = hi - lo
+        ui0 = 0.5 if span == 0 else (default - lo) / span
+        ui = tk.DoubleVar(value=ui0)
+        self._slider_ui[key] = ui
+        val_lbl = ttk.Label(parent, width=18)
+        if key == "climateExtremes":
+            self._climate_window_lbl = val_lbl
+
+        def _apply_ui(_value: str | None = None) -> None:
+            try:
+                t = float(ui.get())
+            except (TypeError, ValueError, tk.TclError):
+                return
+            t = min(1.0, max(0.0, t))
+            current = lo + t * span
+            if step and step > 0:
+                current = lo + round((current - lo) / step) * step
+                current = min(hi, max(lo, current))
+            real.set(current)
+            if key == "distanceToSun":
+                val_lbl.configure(text=f"{current:.2f}")
+                self._refresh_climate_window_label()
+            elif key == "climateExtremes":
+                self._refresh_climate_window_label(extremes_value=current)
+            else:
+                val_lbl.configure(text=f"{current:.2f}")
+
+        scale = ttk.Scale(
+            parent,
+            from_=0.0,
+            to=1.0,
+            variable=ui,
+            orient=tk.HORIZONTAL,
+            length=240,
+            command=_apply_ui,
+        )
+        scale.grid(row=row, column=1, sticky=tk.EW, pady=2)
+        val_lbl.grid(row=row, column=2, sticky=tk.W, padx=6)
+        parent.columnconfigure(1, weight=1)
+        self._bind_help(scale, key)
+        self._slider_refresh[key] = _apply_ui
+        _apply_ui()
+
+    def _refresh_climate_window_label(self, extremes_value: float | None = None) -> None:
+        """Update the Climate extremes readout from sun distance + extremes together."""
+        from planetkit.schema import climate_window_from_extremes
+
+        lbl = getattr(self, "_climate_window_lbl", None)
+        if lbl is None or "climateExtremes" not in self.vars:
+            return
+        try:
+            extremes = float(self.vars["climateExtremes"].get()) if extremes_value is None else float(extremes_value)
+            sun = float(self.vars["distanceToSun"].get()) if "distanceToSun" in self.vars else 1.0
+        except (TypeError, ValueError, tk.TclError):
+            return
+        cold, hot = climate_window_from_extremes(extremes, sun)
+        lbl.configure(text=f"{extremes:.2f}  {cold:.0f}…{hot:.0f}°C")
+        if "tempMinC" in self.vars:
+            self.vars["tempMinC"].set(cold)
+        if "tempMaxC" in self.vars:
+            self.vars["tempMaxC"].set(hot)
+
+    def _sync_slider_ui(self, key: str, value: float) -> None:
+        """Keep 0..1 Scale thumb aligned when loading a real-valued config field."""
+        if key not in self._slider_ui or key not in self._slider_range:
+            return
+        lo, hi, _step = self._slider_range[key]
+        span = hi - lo
+        t = 0.5 if span == 0 else (float(value) - lo) / span
+        self._slider_ui[key].set(min(1.0, max(0.0, t)))
+        refresh = self._slider_refresh.get(key)
+        if refresh is not None:
+            refresh()
+
     def _randomize_seed(self) -> None:
         self.vars["seed"].set(str(random.randint(0, 2_147_483_647)))
 
@@ -314,6 +415,8 @@ class PlanetKitApp(tk.Tk):
                 var.set(bool(value))
             else:
                 var.set(value if not isinstance(value, float) else value)
+            if key in self._slider_ui:
+                self._sync_slider_ui(key, float(value))
         size = str(cfg.width)
         if size in ("512", "1024", "2048") and cfg.width == cfg.height:
             self.size_choice.set(size)
@@ -334,7 +437,11 @@ class PlanetKitApp(tk.Tk):
         data["width"] = parse_field_value(META_BY_KEY["width"], self.vars["width"].get())
         data["height"] = parse_field_value(META_BY_KEY["height"], self.vars["height"].get())
         data["outputDir"] = "output"
-        return PlanetConfig.from_dict(data)
+        cfg = PlanetConfig.from_dict(data)
+        # Easy climate extremes owns the VS °C window when the slider is present.
+        if "climateExtremes" in self.vars:
+            apply_climate_extremes(cfg)
+        return cfg
 
     def _append_log(self, msg: str) -> None:
         self.log.configure(state=tk.NORMAL)
